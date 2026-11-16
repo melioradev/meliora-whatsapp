@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meliora WhatsApp: demo</title>
+<meta name="description" content="An accessible WhatsApp chat button with business hours. No third-party script, no tracking, no dependencies.">
+<link rel="stylesheet" href="demo/demo.css">
+<!-- 1. The button's stylesheet. -->
+<link rel="stylesheet" href="src/meliora-whatsapp.css">
+<!-- 2. The site's settings (this demo reads ?lang= and ?demo= from the URL). -->
+<script src="demo/config.js"></script>
+<!-- 3. Neighbours: Meliora Accessibility and Meliora Consent, the published one-file builds (npm run vendor). -->
+<script src="vendor/meliora-accessibility/meliora-a11y.js"></script>
+<script src="vendor/meliora-consent/meliora-consent.js" data-policy="#privacy" data-categories="analytics"></script>
+<!-- 4. The button. -->
+<script src="src/meliora-whatsapp.js" defer></script>
+<!-- 5. Demo only. -->
+<script src="demo/demo.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+<header lang="en" dir="ltr">
+  <h1>Meliora WhatsApp</h1>
+  <nav aria-label="Demo options">
+    <ul>
+      <li><a href="?lang=en" lang="en">English</a></li>
+      <li><a href="?lang=he" lang="he">עברית</a></li>
+      <li><a href="?demo=away">Away today</a></li>
+      <li><a href="?demo=email">Away, offer email</a></li>
+      <li><a href="?demo=open">Open around the clock</a></li>
+    </ul>
+  </nav>
+</header>
+<main id="main" lang="en" dir="ltr">
+  <section aria-labelledby="what">
+    <h2 id="what">What this page shows</h2>
+    <p>The round green button at the bottom-right is a WhatsApp chat button. During business hours it is a plain link to <code>https://wa.me/…</code> with a message already written. Outside them it says when you’ll get a reply, and offers to send anyway or to email instead.</p>
+    <p>It shares the corner with the <a href="https://github.com/melioradev/meliora-accessibility">Meliora accessibility button</a> and stays clear of the <a href="https://github.com/melioradev/meliora-consent">Meliora Consent</a> cookie banner. Try a narrow window, or the accessibility menu’s text size.</p>
+  </section>
+  <section aria-labelledby="state-title">
+    <h2 id="state-title">Current state</h2>
+    <pre id="demo-state">Loading…</pre>
+    <p>Hours in this demo: Sunday to Thursday 09:00–17:00, Friday 09:00–13:00, Israel time. The number is an example.</p>
+  </section>
+  <section aria-labelledby="install-title">
+    <h2 id="install-title">Install on your site</h2>
+<pre><code>&lt;link rel="stylesheet" href="/meliora-whatsapp/meliora-whatsapp.css"&gt;
+&lt;script src="/meliora-whatsapp-config.js"&gt;&lt;/script&gt;
+&lt;script src="/meliora-whatsapp/meliora-whatsapp.js" defer&gt;&lt;/script&gt;</code></pre>
+    <p>with <code>/meliora-whatsapp-config.js</code>:</p>
+<pre><code>window.MelioraWhatsAppConfig = {
+  phone: '972501234567',
+  message: {he: 'שלום, יש לי שאלה', en: 'Hello, I have a question'},
+  hours: {sun: '09:00-17:00', mon: '09:00-17:00', tue: '09:00-17:00',
+          wed: '09:00-17:00', thu: '09:00-17:00', fri: '09:00-13:00'},
+  email: 'hello@example.com',
+};</code></pre>
+    <p>All the settings are in the <a href="https://github.com/melioradev/meliora-whatsapp#configuration">README</a>.</p>
+  </section>
+  <section aria-labelledby="privacy">
+    <h2 id="privacy">Privacy</h2>
+    <p>The button makes no requests and stores nothing. WhatsApp only hears about the visit if the visitor follows the link.</p>
+  </section>
+</main>
+<footer lang="en" dir="ltr">
+  <a href="https://github.com/melioradev/meliora-whatsapp">Source on GitHub</a>
+  <button type="button" data-consent-open hidden>Cookie settings</button>
+</footer>
+</body>
+</html>

@@ -1,0 +1,129 @@
+/*! Meliora Consent — https://github.com/melioradev/meliora-consent
+    Made by Meliora Novotech Ltd — MIT with visible attribution, see LICENSE. */
+/* Banner, settings dialog, embed placeholder and status message.
+   Colors follow your site's CSS custom properties when they exist (--ink, --surface, --line, --button, --focus…),
+   the same ones the Meliora accessibility panel uses, with built-in light defaults otherwise. */
+
+.mc {
+  --mc-bg: var(--surface, #fff); --mc-fg: var(--ink, #15173f); --mc-muted: var(--muted, #4a4f68);
+  --mc-line: var(--line, #d8dfeb); --mc-border: var(--field-border, #8d95ad); --mc-tint: var(--tint, #eaf1fb);
+  --mc-button: var(--button, #2557b4); --mc-button-hover: var(--button-hover, #1c4592); --mc-button-ink: #fff;
+  --mc-link: var(--brand, #2557b4); --mc-focus: var(--focus, #2557b4);
+  box-sizing: border-box; color: var(--mc-fg); font-size: 1rem; line-height: 1.5; font-weight: 400; text-align: start;
+}
+.mc *, .mc *::before, .mc *::after { box-sizing: border-box; }
+:where(.mc) p { margin: 0; }
+.mc a { color: var(--mc-link); text-decoration: underline; text-underline-offset: .15em; }
+.mc :focus-visible { outline: 3px solid var(--mc-focus); outline-offset: 2px; }
+.mc-title { margin: 0 0 .35rem; color: var(--mc-fg); font-size: 1.125rem; font-weight: 650; line-height: 1.3; letter-spacing: 0; text-transform: none; }
+/* Space at the end of the page while the banner shows, so the last content can scroll above it. */
+.mc-spacer { display: block; margin: 0; padding: 0; pointer-events: none; }
+
+/* ---------- buttons: Accept, Reject and Choose share one style (no button is favoured) ---------- */
+.mc-buttons { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+.mc-btn {
+  flex: 1 1 auto; min-width: 2.75rem; min-height: 2.75rem; margin: 0; padding: .5rem 1rem;
+  border: 2px solid var(--mc-button); border-radius: .5rem; background: var(--mc-button); color: var(--mc-button-ink);
+  font: inherit; font-weight: 600; line-height: 1.25; cursor: pointer;
+}
+.mc-btn:hover { border-color: var(--mc-button-hover); background: var(--mc-button-hover); }
+
+/* ---------- banner (first layer) ---------- */
+/* Card at the bottom-left (physical left in LTR and RTL: the accessibility button owns the bottom-right). */
+.mc-banner {
+  position: fixed; z-index: 59; left: 1rem; bottom: 1rem; width: min(26rem, calc(100% - 2rem));
+  max-height: 50dvh; overflow: auto; overscroll-behavior: contain; margin: 0; /* sites often style <section> */
+  padding: 1rem 1.25rem 1.25rem; border: 1px solid var(--mc-border); border-radius: 1rem;
+  background: var(--mc-bg); box-shadow: 0 .5rem 1.5rem -.5rem rgb(17 19 58 / .35);
+}
+/* Not enough room beside the button: a full-width sheet; the script lifts the button with --meliora-consent-inset. */
+.mc-banner.mc-sheet { left: 0; right: 0; bottom: 0; width: auto; border-width: 1px 0 0; border-radius: 1rem 1rem 0 0; }
+.mc-text { margin-top: .25rem; }
+.mc-gpc { margin-top: .75rem; padding: .5rem .75rem; border-inline-start: 3px solid var(--mc-button); background: var(--mc-tint); font-size: .9375rem; }
+
+/* ---------- status message (role="status"), shown for 2.5 s where the banner was ---------- */
+.mc-status {
+  position: fixed; z-index: 59; left: 1rem; bottom: 1rem; max-width: min(20rem, calc(100% - 6rem)); margin: 0;
+  padding: .5rem .85rem; border: 1px solid #fff; border-radius: .5rem; background: #15173f; color: #fff; font-weight: 600;
+}
+.mc-status:empty { padding: 0; border: 0; }
+
+/* ---------- settings dialog (second layer) ---------- */
+dialog.mc-dialog {
+  width: min(36rem, calc(100% - 2rem)); max-width: none; max-height: calc(100dvh - 2rem); margin: auto; padding: 0;
+  overflow: auto; overscroll-behavior: contain;
+  border: 1px solid var(--mc-border); border-radius: 1rem; background: var(--mc-bg); color: var(--mc-fg);
+}
+dialog.mc-dialog::backdrop { background: rgb(10 12 40 / .45); }
+@media (max-width: 30em) {
+  dialog.mc-dialog { width: 100%; max-height: 88dvh; margin: auto 0 0; border-width: 1px 0 0; border-radius: 1rem 1rem 0 0; }
+}
+.mc-head {
+  position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+  padding: .75rem .75rem .75rem 1.25rem; border-bottom: 1px solid var(--mc-line); background: var(--mc-bg);
+}
+.mc-dialog[dir="rtl"] .mc-head { padding: .75rem 1.25rem .75rem .75rem; }
+.mc-head .mc-title { margin: 0; font-size: 1.2rem; }
+.mc-head .mc-title:focus { outline: none; }
+.mc-head .mc-title:focus-visible { outline: 3px solid var(--mc-focus); }
+.mc-close {
+  display: grid; place-items: center; flex-shrink: 0; width: 2.75rem; height: 2.75rem; padding: 0;
+  border: 0; border-radius: 50%; background: none; color: inherit; cursor: pointer;
+}
+.mc-close:hover { background: var(--mc-tint); }
+.mc-close svg { width: 1.25rem; height: 1.25rem; }
+.mc-body { padding: 1rem 1.25rem 1.25rem; }
+.mc-body > .mc-gpc { margin: 0 0 .75rem; }
+
+.mc-cats { margin: 0; padding: 0; list-style: none; }
+.mc-cat { padding: .75rem 0; border-bottom: 1px solid var(--mc-line); }
+.mc-cat:first-child { padding-top: 0; }
+.mc-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; min-height: 2.75rem;
+  margin: 0; padding: .25rem .5rem; border: 0; border-radius: .5rem; background: none; color: inherit; font: inherit; text-align: start;
+}
+button.mc-row { cursor: pointer; }
+button.mc-row:hover { background: var(--mc-tint); }
+.mc-label { font-weight: 600; }
+.mc-always { color: var(--mc-muted); font-size: .9375rem; font-weight: 600; }
+.mc-desc { padding: 0 .5rem; color: var(--mc-muted); font-size: .9375rem; }
+
+/* Switch: the knob position (not only its color) shows the state. Same as the accessibility panel. */
+.mc-switch { position: relative; flex-shrink: 0; width: 2.1rem; height: 1.2rem; border: 1px solid var(--mc-border); border-radius: 1rem; background: var(--mc-line); }
+.mc-switch::after {
+  content: ""; position: absolute; top: 50%; left: .15rem; width: .8rem; height: .8rem; margin-top: -.4rem;
+  border-radius: 50%; background: var(--mc-muted); transition: left .15s;
+}
+[aria-pressed="true"] > .mc-switch { border-color: var(--mc-button); background: var(--mc-button); }
+[aria-pressed="true"] > .mc-switch::after { left: calc(100% - .95rem); background: #fff; }
+.mc[dir="rtl"] .mc-switch { transform: scaleX(-1); }
+
+.mc-details { margin: .25rem .5rem 0; font-size: .9375rem; }
+.mc-details summary { padding: .6rem 0; font-weight: 500; cursor: pointer; }
+.mc-cookie { display: grid; gap: .25rem; margin: .25rem 0 .5rem; padding: .5rem .75rem; border: 1px solid var(--mc-line); border-radius: .5rem; }
+.mc-cookie div { display: grid; grid-template-columns: minmax(5.5rem, auto) 1fr; gap: .75rem; }
+.mc-cookie dt { font-weight: 600; }
+.mc-cookie dd { margin: 0; overflow-wrap: anywhere; }
+.mc-cookie code { font: .875rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.mc-policy { margin-top: 1rem; }
+.mc-credit { margin-top: .75rem; padding-top: .75rem; border-top: 1px solid var(--mc-line); color: var(--mc-muted); font-size: .8125rem; text-align: center; }
+
+/* ---------- placeholder for an embed waiting for consent ---------- */
+iframe[data-consent][hidden] { display: none !important; }
+.mc-embed {
+  display: grid; align-content: center; gap: .5rem; width: 100%; padding: 1.25rem;
+  border: 1px solid var(--mc-border); border-radius: .75rem; background: var(--mc-tint);
+}
+.mc-embed-title { font-weight: 650; }
+.mc-embed .mc-buttons { margin-top: .25rem; }
+
+/* ---------- the accessibility panel's settings apply ---------- */
+html.a11y-contrast .mc-banner, html.a11y-contrast dialog.mc-dialog, html.a11y-contrast .mc-embed { border: 2px solid #000; box-shadow: none; }
+html.a11y-contrast .mc-switch { border: 2px solid #000; background: #fff; }
+html.a11y-contrast .mc-switch::after { background: #000; }
+html.a11y-contrast [aria-pressed="true"] > .mc-switch { background: #000; }
+html.a11y-contrast [aria-pressed="true"] > .mc-switch::after { background: #fff; }
+html.a11y-contrast .mc-status { background: #000; border: 2px solid #fff; }
+html.a11y-contrast .mc-status:empty { border: 0; }
+@media (prefers-reduced-motion: reduce) { .mc-switch::after { transition: none; } }
+@media print { .mc-banner, .mc-status { display: none !important; } }

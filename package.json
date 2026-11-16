@@ -1,0 +1,44 @@
+{
+  "name": "meliora-whatsapp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "An accessible WhatsApp chat button. A real link with a proper name, a pre-filled message and an outside-business-hours mode. No third-party script, no tracking, no dependencies.",
+  "keywords": [
+    "whatsapp",
+    "chat-button",
+    "contact",
+    "accessibility",
+    "a11y",
+    "wcag",
+    "rtl",
+    "hebrew",
+    "business-hours"
+  ],
+  "homepage": "https://melioradev.github.io/meliora-whatsapp/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/melioradev/meliora-whatsapp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/melioradev/meliora-whatsapp/issues"
+  },
+  "author": "Meliora Novotech Ltd (https://melioranovotech.com)",
+  "license": "SEE LICENSE IN LICENSE",
+  "files": [
+    "src/",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "serve": "node tests/server.mjs",
+    "vendor": "node scripts/vendor.mjs",
+    "check": "node scripts/vendor.mjs --check && node --check src/meliora-whatsapp.js",
+    "test": "playwright test",
+    "screenshots": "node scripts/screenshots.mjs"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "1.64.0",
+    "meliora-accessibility": "1.1.0",
+    "meliora-consent": "0.2.0"
+  }
+}

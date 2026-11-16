@@ -1,0 +1,91 @@
+/*! Meliora WhatsApp — https://github.com/melioradev/meliora-whatsapp
+    By Meliora — MIT with visible attribution, see LICENSE. */
+/* The button and the "We're away" dialog.
+   Colors follow your site's CSS custom properties when they exist (--ink, --surface, --line, --button, --focus…),
+   the same ones the Meliora accessibility panel and cookie banner use, with built-in light defaults otherwise.
+   --whatsapp-bg / --whatsapp-bg-hover set the button color. The default is WhatsApp's teal, #128c7e: white on it is 4.1:1,
+   above the 3:1 WCAG 2.1 asks of an icon (1.4.11). WhatsApp's bright green, #25d366, is only 2:1. */
+
+.mwa {
+  --mwa-bg: var(--surface, #fff); --mwa-fg: var(--ink, #15173f); --mwa-muted: var(--muted, #4a4f68);
+  --mwa-line: var(--line, #d8dfeb); --mwa-border: var(--field-border, #8d95ad); --mwa-tint: var(--tint, #eaf1fb);
+  --mwa-green: var(--whatsapp-bg, #128c7e); --mwa-green-hover: var(--whatsapp-bg-hover, #075e54);
+  --mwa-link: var(--brand, #2557b4); --mwa-focus: var(--focus, #2557b4);
+  box-sizing: border-box; color: var(--mwa-fg); font-size: 1rem; line-height: 1.5; font-weight: 400; text-align: start;
+}
+.mwa *, .mwa *::before, .mwa *::after { box-sizing: border-box; }
+.mwa-sr { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ---------- the button ---------- */
+/* The script sets `right` and `bottom`: centred above the accessibility button, and above the cookie banner when it
+   is under us. These are the values before it runs (or if it can't measure). */
+.mwa-root { position: fixed; z-index: 58; right: 1rem; bottom: calc(4.75rem + var(--meliora-consent-inset, 0px)); margin: 0; padding: 0; }
+.mwa-btn {
+  position: relative; display: grid; place-items: center; width: 2.75rem; height: 2.75rem; margin: 0; padding: 0;
+  border: 2px solid #fff; border-radius: 50%; background: var(--mwa-green); color: #fff;
+  box-shadow: 0 .4rem 1rem -.2rem rgb(17 19 58 / .45); font: inherit; text-decoration: none; cursor: pointer;
+}
+.mwa-btn:hover { background: var(--mwa-green-hover); }
+/* Two rings, so focus shows on light and dark pages alike. */
+.mwa-btn:focus-visible { outline: 3px solid var(--mwa-fg); outline-offset: 3px; box-shadow: 0 0 0 3px #fff; }
+.mwa-icon { width: 1.5rem; height: 1.5rem; }
+/* Away: a small moon on the button's upper corner (the name and the dialog say it in words). */
+.mwa-badge {
+  position: absolute; top: -.4rem; inset-inline-start: -.4rem; display: grid; place-items: center; width: 1.25rem; height: 1.25rem;
+  border: 1.5px solid #15173f; border-radius: 50%; background: #fff; color: #15173f;
+}
+.mwa-badge svg { width: .8rem; height: .8rem; }
+.mwa[dir="rtl"] .mwa-badge svg { transform: scaleX(-1); }
+
+/* ---------- "We're away" dialog ---------- */
+.mwa-dialog a:not(.mwa-action) { color: var(--mwa-link); text-decoration: underline; text-underline-offset: .15em; }
+.mwa :focus-visible { outline: 3px solid var(--mwa-focus); outline-offset: 2px; }
+dialog.mwa-dialog {
+  width: min(26rem, calc(100% - 2rem)); max-width: none; max-height: calc(100dvh - 2rem); margin: auto; padding: 0;
+  overflow: auto; overscroll-behavior: contain;
+  border: 1px solid var(--mwa-border); border-radius: 1rem; background: var(--mwa-bg); color: var(--mwa-fg);
+}
+dialog.mwa-dialog::backdrop { background: rgb(10 12 40 / .45); }
+@media (max-width: 30em) {
+  dialog.mwa-dialog { width: 100%; max-height: 88dvh; margin: auto 0 0; border-width: 1px 0 0; border-radius: 1rem 1rem 0 0; }
+}
+.mwa-head {
+  position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+  padding-block: .75rem; padding-inline: 1.25rem .75rem; border-bottom: 1px solid var(--mwa-line); background: var(--mwa-bg);
+}
+.mwa-title { margin: 0; color: var(--mwa-fg); font-size: 1.2rem; font-weight: 650; line-height: 1.3; letter-spacing: 0; text-transform: none; }
+.mwa-title:focus { outline: none; }
+.mwa-title:focus-visible { outline: 3px solid var(--mwa-focus); }
+.mwa-close {
+  display: grid; place-items: center; flex-shrink: 0; width: 2.75rem; height: 2.75rem; margin: 0; padding: 0;
+  border: 0; border-radius: 50%; background: none; color: inherit; cursor: pointer;
+}
+.mwa-close:hover { background: var(--mwa-tint); }
+.mwa-close svg { width: 1.25rem; height: 1.25rem; }
+.mwa-body { padding: 1rem 1.25rem 1.25rem; }
+.mwa-reply { margin: 0; }
+.mwa-actions { display: grid; gap: .5rem; margin-top: 1rem; }
+.mwa-actions:empty { display: none; }
+.mwa .mwa-action {
+  display: flex; align-items: center; justify-content: center; gap: .5rem; min-height: 2.75rem; padding: .5rem 1rem;
+  border: 2px solid var(--button, #2557b4); border-radius: .5rem; background: var(--button, #2557b4); color: #fff;
+  font-weight: 600; line-height: 1.25; text-align: center; text-decoration: none;
+}
+.mwa .mwa-action:hover { border-color: var(--button-hover, #1c4592); background: var(--button-hover, #1c4592); }
+/* Text needs 4.5:1, more than the icon button's 3:1: WhatsApp's dark teal (7.6:1 with white). */
+.mwa .mwa-action-chat { border-color: var(--whatsapp-text-bg, #075e54); background: var(--whatsapp-text-bg, #075e54); }
+.mwa .mwa-action-chat:hover { border-color: var(--whatsapp-text-bg-hover, #04423b); background: var(--whatsapp-text-bg-hover, #04423b); }
+.mwa-action .mwa-icon { width: 1.25rem; height: 1.25rem; flex-shrink: 0; }
+/* "By Meliora", small, at the physical right in both directions. */
+.mwa-credit { margin: .875rem 0 0; color: var(--mwa-muted); font-size: .75rem; line-height: 1.5; text-align: right; }
+
+/* ---------- the accessibility panel's settings apply ---------- */
+html.a11y-contrast .mwa-btn { background: #000; border-color: #fff; box-shadow: 0 0 0 2px #000; }
+html.a11y-contrast .mwa-badge { border: 2px solid #000; }
+html.a11y-contrast dialog.mwa-dialog { border: 2px solid #000; }
+html.a11y-contrast .mwa .mwa-action { border-color: #000; background: #000; }
+@media (forced-colors: active) {
+  .mwa-btn, .mwa-badge { border-color: ButtonText; forced-color-adjust: auto; }
+  .mwa-btn:focus-visible { outline-color: Highlight; }
+}
+@media print { .mwa-root { display: none !important; } }
