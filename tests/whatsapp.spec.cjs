@@ -24,7 +24,7 @@ async function axe(page) {
 test.beforeEach(async ({page}) => {
   await page.addInitScript(() => {
     window.__csp = [];
-    document.addEventListener('securitypolicyviolation', e => window.__csp.push(`${e.violatedDirective} ${e.blockedURI}`));
+    document.addEventListener('securitypolicyviolation', e => window.__csp.push(`${e.violatedDirective} ${e.blockedURI} ${e.target && e.target.nodeName}`));
   });
   page.__errors = [];
   page.__warnings = [];
@@ -33,10 +33,14 @@ test.beforeEach(async ({page}) => {
   page.on('console', message => { if (message.type() === 'warning') page.__warnings.push(message.text()); });
   page.on('request', request => { if (!request.url().startsWith('http://127.0.0.1:8794/')) page.__foreign.push(request.url()); });
 });
-test.afterEach(async ({page}) => {
+// WebKit reports a style-src-attr violation for every <select> under a strict CSP, even one written in plain HTML with no
+// script on the page (WebKit 27.2; Chromium and Firefox don't). The accessibility panel's language menu is a <select>.
+const webkitSelect = (browserName, report) => browserName === 'webkit' && report === 'style-src-attr inline SELECT';
+test.afterEach(async ({page, browserName}) => {
   expect(page.__errors).toEqual([]);
   expect(page.__foreign, 'requests to other sites').toEqual([]);
-  expect(await page.evaluate(() => window.__csp || []).catch(() => [])).toEqual([]);
+  const csp = await page.evaluate(() => window.__csp || []).catch(() => []);
+  expect(csp.filter(report => !webkitSelect(browserName, report))).toEqual([]);
 });
 
 /* ---------- the link ---------- */
