@@ -71,11 +71,15 @@ test('no message: the link has no text parameter', async ({page}) => {
 });
 
 for (const phone of ['', '050-000-0000', '12345', 'abc']) {
-  test(`an invalid number (${JSON.stringify(phone)}) adds nothing and warns`, async ({page}) => {
+  test(`an invalid number (${JSON.stringify(phone)}) adds nothing and warns once`, async ({page}) => {
     await page.goto(url(PLAIN, {phone}));
     await page.waitForLoadState('load');
     await expect(page.locator('.mwa')).toHaveCount(0);
-    expect(page.__warnings.join('\n')).toContain('international number');
+    expect(page.__warnings).toHaveLength(1);
+    expect(page.__warnings[0]).toContain('international number');
+    expect(page.__warnings[0]).toContain('Nothing was added');
+    // A WhatsApp-only site with a bad number hears about its number, not about Telegram.
+    if (phone) expect(page.__warnings[0]).not.toMatch(/telegram/i);
   });
 }
 
@@ -103,6 +107,154 @@ test('keyboard: Tab reaches the button after the page, with a visible focus ring
   const ring = await btn(page).evaluate(el => { const c = getComputedStyle(el); return [c.outlineStyle, parseFloat(c.outlineWidth)]; });
   expect(ring[0]).toBe('solid');
   expect(ring[1]).toBeGreaterThanOrEqual(2);
+});
+
+/* ---------- Telegram ---------- */
+
+const TG = 'acme_support';
+const TG_URL = `https://t.me/${TG}`;
+const tg = page => page.locator('.mwa-telegram.mwa-btn');
+const wa = page => page.locator('.mwa-whatsapp.mwa-btn');
+
+test('Telegram on its own: a real link to t.me with the username, the message and an accessible name', async ({page}) => {
+  await page.goto(url(PLAIN, {telegram: `@${TG}`, message: 'Hello, I have a question about {title}'}));
+  const link = page.getByRole('link', {name: 'Chat with us on Telegram (opens in a new tab)'});
+  await expect(link).toBeVisible();
+  await expect(link).toHaveAttribute('href', `${TG_URL}?text=${encodeURIComponent('Hello, I have a question about WhatsApp button on its own')}`);
+  await expect(link).toHaveAttribute('target', '_blank');
+  await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  await expect(page.locator('.mwa-btn')).toHaveCount(1);
+  expect(await page.evaluate(() => window.MelioraWhatsApp.url())).toBe(await link.getAttribute('href'));
+  expect(await page.evaluate(() => window.MelioraWhatsApp.url('whatsapp'))).toBeNull();
+  // An app name the button doesn't know: no link, and open() does nothing (no error, no dialog, no new tab).
+  expect(await page.evaluate(() => window.MelioraWhatsApp.url('signal'))).toBeNull();
+  const opened = [];
+  page.on('popup', p => opened.push(p.url()));
+  await page.evaluate(() => window.MelioraWhatsApp.open('signal'));
+  await expect(dialog(page)).toHaveCount(0);
+  expect(opened).toEqual([]);
+  expect(page.__warnings).toEqual([]);
+});
+
+for (const [given, href] of [
+  ['acme_support', TG_URL], ['https://t.me/acme_support', TG_URL], ['t.me/acme_support/', TG_URL], ['Acme', 'https://t.me/Acme'],
+  ['+972 50-000-0000', `https://t.me/+${PHONE}`], ['00972500000000', `https://t.me/+${PHONE}`],
+  // Group invite links: no pre-filled message, which Telegram doesn't take there.
+  ['https://t.me/+Xy9_AbCdEf-12345', 'https://t.me/+Xy9_AbCdEf-12345'], ['https://t.me/joinchat/Xy9_AbCdEf-12345', 'https://t.me/+Xy9_AbCdEf-12345'],
+]) {
+  test(`Telegram accepts ${JSON.stringify(given)}`, async ({page}) => {
+    await page.goto(url(PLAIN, {telegram: given, message: 'Hi'}));
+    await expect(tg(page)).toHaveAttribute('href', href.includes('/+X') ? href : `${href}?text=Hi`);
+    expect(page.__warnings).toEqual([]);
+  });
+}
+
+test('Telegram in Hebrew, with a business name', async ({page}) => {
+  await page.goto(url(PLAIN, {telegram: TG, name: 'Acme'}, 'he'));
+  await expect(page.getByRole('link', {name: 'שלחו הודעה בטלגרם אל Acme (נפתח בכרטיסייה חדשה)'})).toHaveAttribute('href', TG_URL);
+});
+
+for (const telegram of ['abc', '1acme', '_acme', 'acme-support', 'acme_support_', 'https://example.com/acme', '050-000-0000', 'https://t.me/+short', 'a'.repeat(33)]) {
+  test(`an invalid Telegram username or number (${JSON.stringify(telegram)}) is ignored with one warning`, async ({page}) => {
+    await page.goto(url(PLAIN, {telegram, phone: PHONE}));
+    await page.waitForLoadState('load');
+    await expect(page.locator('.mwa-btn')).toHaveCount(1);
+    await expect(wa(page)).toBeVisible();
+    expect(page.__warnings).toHaveLength(1);
+    expect(page.__warnings[0]).toContain('Telegram username');
+    // On its own: nothing added, still one warning.
+    page.__warnings = [];
+    await page.goto(url(PLAIN, {telegram}));
+    await page.waitForLoadState('load');
+    await expect(page.locator('.mwa')).toHaveCount(0);
+    expect(page.__warnings).toHaveLength(1);
+    expect(page.__warnings[0]).toContain('Telegram username');
+    expect(page.__warnings[0]).toContain('Nothing was added');
+  });
+}
+
+test('an invalid WhatsApp number beside a valid Telegram username: Telegram only, with one warning', async ({page}) => {
+  await page.goto(url(PLAIN, {phone: '050-000-0000', telegram: TG}));
+  await page.waitForLoadState('load');
+  await expect(page.locator('.mwa-btn')).toHaveCount(1);
+  await expect(tg(page)).toBeVisible();
+  expect(page.__warnings).toHaveLength(1);
+  expect(page.__warnings[0]).toContain('international number');
+  expect(page.__warnings[0]).not.toContain('Nothing was added');
+});
+
+test('both invalid: one warning naming both, and nothing added', async ({page}) => {
+  await page.goto(url(PLAIN, {phone: '050-000-0000', telegram: 'acme_'}));
+  await page.waitForLoadState('load');
+  await expect(page.locator('.mwa')).toHaveCount(0);
+  expect(page.__warnings).toHaveLength(1);
+  expect(page.__warnings[0]).toMatch(/international number.*Telegram username.*Nothing was added/);
+});
+
+test('both apps: Telegram above WhatsApp, the same message, stacked in the corner and in that Tab order', async ({page}) => {
+  for (const lang of ['en', 'he']) {
+    await page.goto(url(PLAIN, {phone: PHONE, telegram: TG, message: 'Hi'}, lang));
+    await frames(page);
+    await expect(tg(page)).toHaveAttribute('href', `${TG_URL}?text=Hi`);
+    await expect(wa(page)).toHaveAttribute('href', `https://wa.me/${PHONE}?text=Hi`);
+    const [top, bottom] = await Promise.all([tg(page).boundingBox(), wa(page).boundingBox()]);
+    expect(top.y + top.height, `Telegram above WhatsApp, with a gap (${lang})`).toBeLessThanOrEqual(bottom.y - 8);
+    expect(Math.abs(top.x - bottom.x)).toBeLessThanOrEqual(1);
+    expect(Math.round(1280 - bottom.x - bottom.width)).toBe(16);
+    expect(Math.round(900 - bottom.y - bottom.height)).toBe(16);
+    expect(top.width).toBeGreaterThanOrEqual(44);
+  }
+  await page.goto(url(PLAIN, {phone: PHONE, telegram: TG}));
+  for (const target of ['.skip', '#first', '#second', '.mwa-telegram', '.mwa-whatsapp']) {
+    await page.keyboard.press('Tab');
+    await expect(page.locator(target)).toBeFocused();
+  }
+  // The API: WhatsApp by default, as before; either app by name.
+  expect(await page.evaluate(() => [window.MelioraWhatsApp.url(), window.MelioraWhatsApp.url('telegram')])).toEqual([`https://wa.me/${PHONE}`, TG_URL]);
+});
+
+test('both apps, away: each button opens the dialog for its own app, and focus goes back to it', async ({page}) => {
+  await page.clock.install({time: israel('2026-11-16T18:00:00')});
+  await page.goto(url(PLAIN, {...HOURS, telegram: TG}));
+  await expect(page.getByRole('button', {name: 'Chat with us on WhatsApp. We’re away right now'})).toBeVisible();
+  const away = page.getByRole('button', {name: 'Chat with us on Telegram. We’re away right now'});
+  await expect(away.locator('.mwa-badge')).toBeVisible();
+  await away.focus();
+  await page.keyboard.press('Enter');
+  await expect(dialog(page).locator('#mwa-reply')).toHaveText('We’ll reply tomorrow at 09:00 AM.');
+  await expect(dialog(page).getByRole('link', {name: 'Send a Telegram message anyway (opens in a new tab)'})).toHaveAttribute('href', TG_URL);
+  await expect(dialog(page).getByRole('link', {name: /WhatsApp/})).toHaveCount(0);
+  await expect(dialog(page).getByRole('link', {name: 'Email us'})).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(away).toBeFocused();
+  // Then WhatsApp: the dialog offers WhatsApp instead.
+  await wa(page).click();
+  await expect(dialog(page).getByRole('link', {name: /Send a WhatsApp anyway/})).toBeVisible();
+  await expect(dialog(page).getByRole('link', {name: /Telegram/})).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(wa(page)).toBeFocused();
+  // Hebrew.
+  await page.goto(url(PLAIN, {...HOURS, telegram: TG}, 'he'));
+  await page.getByRole('button', {name: 'שלחו לנו הודעה בטלגרם. אנחנו לא זמינים כרגע'}).click();
+  await expect(dialog(page).getByRole('link', {name: 'לשלוח הודעה בטלגרם בכל זאת (נפתח בכרטיסייה חדשה)'})).toBeVisible();
+});
+
+test('both apps at opening time: both change by themselves and focus stays on the same app', async ({page}) => {
+  await page.clock.install({time: israel('2026-11-16T16:59:30')});
+  await page.goto(url(PLAIN, {...HOURS, telegram: TG}));
+  await tg(page).focus();
+  await page.clock.fastForward('01:00');
+  await expect(page.getByRole('button', {name: /on Telegram\. We’re away/})).toBeFocused();
+  await expect(page.locator('button.mwa-btn')).toHaveCount(2);
+  await page.clock.fastForward('16:00:00');
+  await expect(page.getByRole('link', {name: /Chat with us on Telegram/})).toBeFocused();
+});
+
+test('MelioraWhatsApp.open("telegram") outside hours opens the Telegram dialog', async ({page}) => {
+  await page.clock.install({time: israel('2026-11-16T18:00:00')});
+  await page.goto(url(PLAIN, {...HOURS, telegram: TG}));
+  await page.evaluate(() => window.MelioraWhatsApp.open('telegram'));
+  await expect(dialog(page).getByRole('link', {name: /Send a Telegram message anyway/})).toBeVisible();
 });
 
 /* ---------- business hours ---------- */
@@ -233,33 +385,54 @@ test('a visitor in another time zone: hours follow the business, and the reply t
 /* ---------- accessibility checks ---------- */
 
 for (const [lang, scheme] of [['en', 'light'], ['he', 'light'], ['en', 'dark'], ['he', 'dark']]) {
-  test(`axe: button and dialog have no WCAG 2.1 AA violations (${lang}, ${scheme})`, async ({page}) => {
+  test(`axe: buttons and dialog have no WCAG 2.1 AA violations (${lang}, ${scheme})`, async ({page}) => {
     await page.emulateMedia({colorScheme: scheme});
     await page.clock.install({time: israel('2026-11-16T10:00:00')});
-    await page.goto(url(PLAIN, HOURS, lang));
-    await expect(btn(page)).toBeVisible();
+    await page.goto(url(PLAIN, {...HOURS, telegram: TG}, lang));
+    await expect(btn(page)).toHaveCount(2);
     await axe(page);
-    await page.goto(url(PLAIN, {...HOURS, closedDates: ['2026-11-16']}, lang));
-    await btn(page).click();
-    await expect(dialog(page)).toBeVisible();
-    await axe(page);
+    for (const app of [wa, tg]) {
+      await page.goto(url(PLAIN, {...HOURS, telegram: TG, closedDates: ['2026-11-16']}, lang));
+      await app(page).click();
+      await expect(dialog(page)).toBeVisible();
+      await axe(page);
+    }
   });
 }
 
-test('WhatsApp teal by default: the icon and the button keep 3:1 on light and dark pages', async ({page}) => {
-  const lum = rgb => {
-    const [r, g, b] = rgb.match(/\d+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  };
-  const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
-  await page.goto(url(PLAIN, {phone: PHONE}));
-  expect(await btn(page).evaluate(el => getComputedStyle(el).backgroundColor)).toBe('rgb(18, 140, 126)'); // #128c7e
-  for (const scheme of ['light', 'dark']) {
-    await page.emulateMedia({colorScheme: scheme});
-    await page.goto(url(PLAIN, {phone: PHONE}));
-    const [bg, fg, page_] = await btn(page).evaluate(el => [getComputedStyle(el).backgroundColor, getComputedStyle(el).color, getComputedStyle(document.body).backgroundColor]);
-    expect(ratio(bg, fg)).toBeGreaterThanOrEqual(3); // WCAG 1.4.11, non-text contrast
-    expect(ratio(bg, page_)).toBeGreaterThanOrEqual(3);
+const lum = rgb => {
+  const [r, g, b] = rgb.match(/\d+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+
+for (const [name, app, colour] of [['WhatsApp teal', wa, 'rgb(18, 140, 126)'], ['Telegram blue', tg, 'rgb(0, 136, 204)']]) {
+  test(`${name} by default: the icon and the button keep 3:1 on light and dark pages`, async ({page}) => {
+    await page.goto(url(PLAIN, {phone: PHONE, telegram: TG}));
+    expect(await app(page).evaluate(el => getComputedStyle(el).backgroundColor)).toBe(colour);
+    for (const scheme of ['light', 'dark']) {
+      await page.emulateMedia({colorScheme: scheme});
+      await page.mouse.move(0, 0); // Firefox keeps :hover across a reload while the mouse stays put
+      await page.goto(url(PLAIN, {phone: PHONE, telegram: TG}));
+      const [bg, fg, page_] = await app(page).evaluate(el => [getComputedStyle(el).backgroundColor, getComputedStyle(el).color, getComputedStyle(document.body).backgroundColor]);
+      expect(ratio(bg, fg)).toBeGreaterThanOrEqual(3); // WCAG 1.4.11, non-text contrast
+      expect(ratio(bg, page_)).toBeGreaterThanOrEqual(3);
+      await app(page).hover();
+      expect(ratio(await app(page).evaluate(el => getComputedStyle(el).backgroundColor), fg), 'hover').toBeGreaterThanOrEqual(3);
+    }
+  });
+}
+
+test('the dialog’s “anyway” buttons have text at 4.5:1 for both apps', async ({page}) => {
+  await page.clock.install({time: israel('2026-11-16T18:00:00')});
+  for (const app of [wa, tg]) {
+    await page.goto(url(PLAIN, {...HOURS, telegram: TG}));
+    await app(page).click();
+    const action = dialog(page).locator('.mwa-action-chat');
+    const [bg, fg] = await action.evaluate(el => [getComputedStyle(el).backgroundColor, getComputedStyle(el).color]);
+    expect(ratio(bg, fg)).toBeGreaterThanOrEqual(4.5);
+    await action.hover();
+    expect(ratio(await action.evaluate(el => getComputedStyle(el).backgroundColor), fg), 'hover').toBeGreaterThanOrEqual(4.5);
   }
 });
 
@@ -386,27 +559,113 @@ test.describe('with Meliora Accessibility and Meliora Consent', () => {
     expect(me.x + me.width, 'beside the accessibility button').toBeLessThanOrEqual(fab.x);
   });
 
-  test('the panel’s High contrast setting applies to the button and the dialog', async ({page}) => {
+  // Both apps: the stack (Telegram above WhatsApp) moves as one.
+  const stack = async page => {
+    const [a, b] = await Promise.all([tg(page).boundingBox(), wa(page).boundingBox()]);
+    expect(intersects(a, b), 'Telegram over WhatsApp').toBe(false);
+    const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y);
+    return {x, y, width: Math.max(a.x + a.width, b.x + b.width) - x, height: Math.max(a.y + a.height, b.y + b.height) - y};
+  };
+
+  test('both apps never cover the accessibility button, the banner or each other: widths, 100–200% text, English and Hebrew', async ({page}) => {
+    test.setTimeout(120000);
+    for (const width of [1280, 640, 375, 320]) for (const scale of [1, 2]) for (const lang of ['en', 'he']) {
+      const where = `${width}px, ${scale * 100}% text, ${lang}`;
+      await page.setViewportSize({width, height: 800});
+      await page.goto(url(ALL, {phone: PHONE, telegram: TG}, lang));
+      await page.evaluate(s => { localStorage.setItem('meliora.a11y', JSON.stringify({scale: s})); }, scale);
+      await page.reload();
+      await expect(page.locator('.mc-banner')).toBeVisible();
+      await frames(page);
+      const [me, fab, banner] = await Promise.all([stack(page), panelBox(page), page.locator('.mc-banner').boundingBox()]);
+      expect(intersects(me, fab), `over the accessibility button at ${where}`).toBe(false);
+      expect(await aligned(page, me), `lined up with the accessibility button at ${where}`).toBe(true);
+      expect(intersects(me, banner), `over the banner at ${where}`).toBe(false);
+      expect(me.y, `on screen at ${where}`).toBeGreaterThanOrEqual(0);
+      await page.evaluate(() => localStorage.clear());
+    }
+  });
+
+  test('both apps follow the accessibility button wherever it is dragged', async ({page}) => {
+    for (const [x, y] of [[1, 1], [1, 0.8], [1, 0.5], [0, 1]]) {
+      await page.addInitScript(([px, py]) => localStorage.setItem('meliora.a11y', JSON.stringify({pos: {x: px, y: py}})), [x, y]);
+      await page.goto(url(ALL, {phone: PHONE, telegram: TG}));
+      await expect(page.locator('.a11y-fab')).toHaveClass(/a11y-moved/);
+      await frames(page);
+      const [me, fab] = await Promise.all([stack(page), panelBox(page)]);
+      expect(intersects(me, fab), `accessibility button dragged to ${x}, ${y}`).toBe(false);
+      expect(await aligned(page, me), `lined up with the accessibility button dragged to ${x}, ${y}`).toBe(true);
+      expect(me.y, `on screen with the button at ${x}, ${y}`).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  // Short screen, 200% text: a column of two buttons is too tall, so they go side by side, WhatsApp nearest the
+  // accessibility button (or the corner), whichever side they are on and in English and Hebrew alike.
+  const DECIDED = JSON.stringify({v: 1, id: 'x', policy: '', ts: '2026-11-16T00:00:00.000Z', method: 'reject-all', gpc: false, choices: {analytics: false}});
+  const SHORT = [
+    // [label, accessibility button position, banner shown, where the row should be]
+    ['left of the accessibility button', null, true, 'left'],
+    ['right of the accessibility button', {x: 0, y: 0.5}, false, 'right'],
+    ['in the corner, the accessibility button over the banner', {x: 0, y: 1}, true, 'corner'],
+  ];
+  for (const [label, pos, banner, side] of SHORT) for (const lang of ['en', 'he']) {
+    test(`both apps on a short screen at 200% text, ${label} (${lang}): side by side, WhatsApp nearest`, async ({page}) => {
+      await page.setViewportSize({width: 800, height: 360});
+      await page.addInitScript(([p, decided]) => {
+        localStorage.setItem('meliora.a11y', JSON.stringify(p ? {scale: 2, pos: p} : {scale: 2}));
+        if (decided) localStorage.setItem('meliora.consent', decided);
+      }, [pos, banner ? null : DECIDED]);
+      await page.goto(url(ALL, {phone: PHONE, telegram: TG}, lang));
+      await expect(page.locator('.mc-banner')).toHaveCount(banner ? 1 : 0);
+      await frames(page);
+      const [me, fab] = await Promise.all([stack(page), panelBox(page)]);
+      expect(intersects(me, fab), 'over the accessibility button').toBe(false);
+      if (banner) expect(intersects(me, await page.locator('.mc-banner').boundingBox()), 'over the banner').toBe(false);
+      expect(me.y).toBeGreaterThanOrEqual(0);
+      expect(me.y + me.height).toBeLessThanOrEqual(360);
+      await expect(page.locator('.mwa-root')).toHaveClass(/mwa-row/);
+      const [w, t] = await Promise.all([wa(page).boundingBox(), tg(page).boundingBox()]);
+      if (side === 'corner') {
+        expect(Math.round(800 - me.x - me.width), 'at the right edge, 1rem in (32px at 200% text)').toBe(32);
+        expect(w.x, 'WhatsApp nearest the corner').toBeGreaterThan(t.x);
+        return;
+      }
+      expect(await aligned(page, me), 'level with the accessibility button').toBe(true);
+      expect(side === 'left' ? me.x + me.width <= fab.x : me.x >= fab.x + fab.width, `${side} of the accessibility button`).toBe(true);
+      const face = await page.locator('.a11y-trigger').boundingBox();
+      const gapTo = b => Math.abs(b.x + b.width / 2 - (face.x + face.width / 2));
+      expect(gapTo(w), 'WhatsApp nearer the accessibility button than Telegram').toBeLessThan(gapTo(t));
+    });
+  }
+
+  test('the panel’s High contrast setting applies to both buttons and to each app’s dialog', async ({page}) => {
     await page.addInitScript(() => localStorage.setItem('meliora.a11y', JSON.stringify({contrast: true})));
     await page.clock.install({time: israel('2026-11-16T18:00:00')});
-    await page.goto(url(ALL, HOURS));
-    expect(await btn(page).evaluate(el => getComputedStyle(el).backgroundColor)).toBe('rgb(0, 0, 0)');
-    await btn(page).click();
-    expect(await dialog(page).evaluate(el => getComputedStyle(el).borderTopWidth)).toBe('2px');
-    await axe(page);
+    for (const app of [wa, tg]) {
+      await page.goto(url(ALL, {...HOURS, telegram: TG}));
+      expect(await app(page).evaluate(el => getComputedStyle(el).backgroundColor)).toBe('rgb(0, 0, 0)');
+      await app(page).hover();
+      expect(await app(page).evaluate(el => getComputedStyle(el).backgroundColor), 'hover').toBe('rgb(0, 0, 0)');
+      await app(page).click();
+      expect(await dialog(page).evaluate(el => getComputedStyle(el).borderTopWidth)).toBe('2px');
+      expect(await dialog(page).locator('.mwa-action-chat').evaluate(el => getComputedStyle(el).backgroundColor)).toBe('rgb(0, 0, 0)');
+      await axe(page);
+    }
   });
 });
 
 /* ---------- the demo page ---------- */
 
-test('the demo page loads the three tools without errors, in English and Hebrew', async ({page}) => {
+test('the demo page loads the four tools without errors, in English and Hebrew', async ({page}) => {
   for (const query of ['?lang=en', '?lang=he&demo=away', '?demo=email']) {
     await page.goto(`/${query}`);
-    await expect(btn(page)).toBeVisible();
+    await expect(wa(page)).toBeVisible();
+    await expect(tg(page)).toBeVisible();
     await expect(page.locator('.a11y-trigger')).toBeVisible();
     await expect(page.locator('.mc-banner')).toBeVisible();
     await expect(page.locator('#demo-state')).toContainText('wa.me/972500000000');
+    await expect(page.locator('#demo-state')).toContainText('t.me/+972500000000');
   }
-  await btn(page).click();
+  await tg(page).click();
   await expect(dialog(page).getByRole('link', {name: 'Email us instead'})).toBeVisible();
 });

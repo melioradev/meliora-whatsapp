@@ -2,9 +2,10 @@
   "name": "meliora-whatsapp",
   "version": "0.1.0",
   "private": true,
-  "description": "An accessible WhatsApp chat button. A real link with a proper name, a pre-filled message and an outside-business-hours mode. No third-party script, no tracking, no dependencies.",
+  "description": "Accessible WhatsApp and Telegram chat buttons. Real links with proper names, a pre-filled message and an outside-business-hours mode. No third-party script, no tracking, no dependencies.",
   "keywords": [
     "whatsapp",
+    "telegram",
     "chat-button",
     "contact",
     "accessibility",

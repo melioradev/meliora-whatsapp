@@ -1,31 +1,49 @@
 /*! Meliora WhatsApp — https://github.com/melioradev/meliora-whatsapp
     By Meliora — MIT with visible attribution, see LICENSE. */
-/* The button and the "We're away" dialog.
+/* The buttons (WhatsApp, Telegram, or both) and the "We're away" dialog.
    Colors follow your site's CSS custom properties when they exist (--ink, --surface, --line, --button, --focus…),
    the same ones the Meliora accessibility panel and cookie banner use, with built-in light defaults otherwise.
    --whatsapp-bg / --whatsapp-bg-hover set the button color. The default is WhatsApp's teal, #128c7e: white on it is 4.1:1,
-   above the 3:1 WCAG 2.1 asks of an icon (1.4.11). WhatsApp's bright green, #25d366, is only 2:1. */
+   above the 3:1 WCAG 2.1 asks of an icon (1.4.11). WhatsApp's bright green, #25d366, is only 2:1.
+   --telegram-bg / --telegram-bg-hover do the same for Telegram. The default is Telegram's classic blue, #0088cc: 3.9:1
+   with white. Telegram's current light blue, #26a5e4, is only 2.8:1. */
 
 .mwa {
   --mwa-bg: var(--surface, #fff); --mwa-fg: var(--ink, #15173f); --mwa-muted: var(--muted, #4a4f68);
   --mwa-line: var(--line, #d8dfeb); --mwa-border: var(--field-border, #8d95ad); --mwa-tint: var(--tint, #eaf1fb);
-  --mwa-green: var(--whatsapp-bg, #128c7e); --mwa-green-hover: var(--whatsapp-bg-hover, #075e54);
   --mwa-link: var(--brand, #2557b4); --mwa-focus: var(--focus, #2557b4);
   box-sizing: border-box; color: var(--mwa-fg); font-size: 1rem; line-height: 1.5; font-weight: 400; text-align: start;
 }
 .mwa *, .mwa *::before, .mwa *::after { box-sizing: border-box; }
 .mwa-sr { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
-/* ---------- the button ---------- */
+/* ---------- the buttons ---------- */
 /* The script sets `right` and `bottom`: centred above the accessibility button, and above the cookie banner when it
-   is under us. These are the values before it runs (or if it can't measure). */
-.mwa-root { position: fixed; z-index: 58; right: 1rem; bottom: calc(4.75rem + var(--meliora-consent-inset, 0px)); margin: 0; padding: 0; }
+   is under us. These are the values before it runs (or if it can't measure). With both apps, Telegram sits above
+   WhatsApp, with room between them for the focus ring and the away badge. */
+.mwa-root {
+  position: fixed; z-index: 58; right: 1rem; bottom: calc(4.75rem + var(--meliora-consent-inset, 0px)); margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: .75rem;
+}
+/* Beside the accessibility button on a short screen, the script lays the two buttons out in a row, with WhatsApp next to
+   the accessibility button: `mwa-flip` reverses the row when the reading direction would put WhatsApp on the far side. */
+.mwa-root.mwa-row { flex-direction: row; }
+.mwa-root.mwa-row.mwa-flip { flex-direction: row-reverse; }
+/* Each app's colours: --mwa-app for the round button (3:1 for the icon), --mwa-app-text for the dialog's text button (4.5:1). */
+.mwa-whatsapp {
+  --mwa-app: var(--whatsapp-bg, #128c7e); --mwa-app-hover: var(--whatsapp-bg-hover, #075e54);
+  --mwa-app-text: var(--whatsapp-text-bg, #075e54); --mwa-app-text-hover: var(--whatsapp-text-bg-hover, #04423b);
+}
+.mwa-telegram {
+  --mwa-app: var(--telegram-bg, #0088cc); --mwa-app-hover: var(--telegram-bg-hover, #0077b3);
+  --mwa-app-text: var(--telegram-text-bg, #0077b3); --mwa-app-text-hover: var(--telegram-text-bg-hover, #00679e);
+}
 .mwa-btn {
   position: relative; display: grid; place-items: center; width: 2.75rem; height: 2.75rem; margin: 0; padding: 0;
-  border: 2px solid #fff; border-radius: 50%; background: var(--mwa-green); color: #fff;
+  border: 2px solid #fff; border-radius: 50%; background: var(--mwa-app); color: #fff;
   box-shadow: 0 .4rem 1rem -.2rem rgb(17 19 58 / .45); font: inherit; text-decoration: none; cursor: pointer;
 }
-.mwa-btn:hover { background: var(--mwa-green-hover); }
+.mwa-btn:hover { background: var(--mwa-app-hover); }
 /* Two rings, so focus shows on light and dark pages alike. */
 .mwa-btn:focus-visible { outline: 3px solid var(--mwa-fg); outline-offset: 3px; box-shadow: 0 0 0 3px #fff; }
 .mwa-icon { width: 1.5rem; height: 1.5rem; }
@@ -72,9 +90,9 @@ dialog.mwa-dialog::backdrop { background: rgb(10 12 40 / .45); }
   font-weight: 600; line-height: 1.25; text-align: center; text-decoration: none;
 }
 .mwa .mwa-action:hover { border-color: var(--button-hover, #1c4592); background: var(--button-hover, #1c4592); }
-/* Text needs 4.5:1, more than the icon button's 3:1: WhatsApp's dark teal (7.6:1 with white). */
-.mwa .mwa-action-chat { border-color: var(--whatsapp-text-bg, #075e54); background: var(--whatsapp-text-bg, #075e54); }
-.mwa .mwa-action-chat:hover { border-color: var(--whatsapp-text-bg-hover, #04423b); background: var(--whatsapp-text-bg-hover, #04423b); }
+/* Text needs 4.5:1, more than the icon button's 3:1: WhatsApp's dark teal (7.6:1 with white), a darker Telegram blue (4.9:1). */
+.mwa .mwa-action-chat { border-color: var(--mwa-app-text); background: var(--mwa-app-text); }
+.mwa .mwa-action-chat:hover { border-color: var(--mwa-app-text-hover); background: var(--mwa-app-text-hover); }
 .mwa-action .mwa-icon { width: 1.25rem; height: 1.25rem; flex-shrink: 0; }
 /* "By Meliora", small, at the physical right in both directions. */
 .mwa-credit { margin: .875rem 0 0; color: var(--mwa-muted); font-size: .75rem; line-height: 1.5; text-align: right; }

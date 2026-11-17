@@ -21,7 +21,7 @@ try {
     if (shot.decided) await page.addInitScript(() => localStorage.setItem('meliora.consent', JSON.stringify({v: 1, id: 'x', policy: '', ts: new Date().toISOString(), method: 'reject-all', gpc: false, choices: {analytics: false}})));
     await page.goto(`http://127.0.0.1:${PORT}${shot.path}`);
     await page.waitForLoadState('load');
-    if (shot.click) await page.locator('.mwa-btn').click();
+    if (shot.click) await page.locator('.mwa-btn').first().click();
     await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
     await page.screenshot({path: `docs/screenshots/${shot.name}.png`});
     await context.close();
