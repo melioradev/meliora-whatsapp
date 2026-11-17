@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Meliora WhatsApp: demo</title>
-<meta name="description" content="An accessible WhatsApp chat button with business hours. No third-party script, no tracking, no dependencies.">
+<meta name="description" content="Accessible WhatsApp and Telegram chat buttons with business hours. No third-party script, no tracking, no dependencies.">
 <link rel="stylesheet" href="demo/demo.css">
 <!-- 1. The button's stylesheet. -->
 <link rel="stylesheet" href="src/meliora-whatsapp.css">
@@ -35,13 +35,13 @@
 <main id="main" lang="en" dir="ltr">
   <section aria-labelledby="what">
     <h2 id="what">What this page shows</h2>
-    <p>The round green button at the bottom-right is a WhatsApp chat button. During business hours it is a plain link to <code>https://wa.me/…</code> with a message already written. Outside them it says when you’ll get a reply, and offers to send anyway or to email instead.</p>
-    <p>It shares the corner with the <a href="https://github.com/melioradev/meliora-accessibility">Meliora accessibility button</a> and stays clear of the <a href="https://github.com/melioradev/meliora-consent">Meliora Consent</a> cookie banner. Try a narrow window, or the accessibility menu’s text size.</p>
+    <p>The round buttons at the bottom-right are chat buttons: WhatsApp (green) and Telegram (blue) above it. During business hours each is a plain link to <code>https://wa.me/…</code> or <code>https://t.me/…</code> with a message already written. Outside them they say when you’ll get a reply, and offer to send anyway or to email instead.</p>
+    <p>They share the corner with the <a href="https://github.com/melioradev/meliora-accessibility">Meliora accessibility button</a> and stay clear of the <a href="https://github.com/melioradev/meliora-consent">Meliora Consent</a> cookie banner. Try a narrow window, or the accessibility menu’s text size.</p>
   </section>
   <section aria-labelledby="state-title">
     <h2 id="state-title">Current state</h2>
     <pre id="demo-state">Loading…</pre>
-    <p>Hours in this demo: Sunday to Thursday 09:00–17:00, Friday 09:00–13:00, Israel time. The number is an example.</p>
+    <p>Hours in this demo: Sunday to Thursday 09:00–17:00, Friday 09:00–13:00, Israel time. The number is an example, used for both apps.</p>
   </section>
   <section aria-labelledby="install-title">
     <h2 id="install-title">Install on your site</h2>
@@ -55,12 +55,13 @@
   hours: {sun: '09:00-17:00', mon: '09:00-17:00', tue: '09:00-17:00',
           wed: '09:00-17:00', thu: '09:00-17:00', fri: '09:00-13:00'},
   email: 'hello@example.com',
+  telegram: 'your_username', // optional
 };</code></pre>
     <p>All the settings are in the <a href="https://github.com/melioradev/meliora-whatsapp#configuration">README</a>.</p>
   </section>
   <section aria-labelledby="privacy">
     <h2 id="privacy">Privacy</h2>
-    <p>The button makes no requests and stores nothing. WhatsApp only hears about the visit if the visitor follows the link.</p>
+    <p>The buttons make no requests and store nothing. WhatsApp or Telegram only hears about the visit if the visitor follows the link.</p>
   </section>
 </main>
 <footer lang="en" dir="ltr">

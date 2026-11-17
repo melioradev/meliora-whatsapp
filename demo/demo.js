@@ -4,7 +4,7 @@
   const show = () => {
     const api = window.MelioraWhatsApp;
     if (!api) { out.textContent = 'The button did not start: check the console.'; return; }
-    out.textContent = `Open now: ${api.isOpen() ? 'yes' : 'no'}\nLink: ${api.url()}`;
+    out.textContent = `Open now: ${api.isOpen() ? 'yes' : 'no'}\nWhatsApp: ${api.url('whatsapp')}\nTelegram: ${api.url('telegram')}`;
   };
   if (document.readyState === 'complete') show(); else addEventListener('load', show);
 })();

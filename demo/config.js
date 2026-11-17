@@ -13,6 +13,7 @@
 
   window.MelioraWhatsAppConfig = {
     phone: '972500000000', // an example number: put yours here, international format, digits only
+    telegram: '+972500000000', // the same example number; on your site, your Telegram username is more reliable
     name: 'Meliora Novotech',
     message: {
       en: 'Hello, I have a question about {title}',
